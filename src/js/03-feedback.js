@@ -1,41 +1,51 @@
 import throttle from 'lodash.throttle';
-const INPUT_VALUES = 'feedback-form-state';
+
+const INPUT_KEYS = 'feedback-form-state';
+
 const refs = {
-  form: document.querySelector('.feedback-form'),
+  form: document.querySelector('form'),
   input: document.querySelector('input'),
   textarea: document.querySelector('textarea'),
 };
 
-refs.form.addEventListener('input', throttle(onFormInput, 500));
-refs.form.addEventListener('submit', onFormSubmit);
+let arrOfValues = {};
 
-const arrOfValues = {};
-
-function onFormInput(e) {
-  arrOfValues[e.target.name] = e.target.value;
-  localStorage.setItem(INPUT_VALUES, JSON.stringify(arrOfValues));
-}
-
+const { input, textarea, form, btnSbmit } = refs;
 onUnexpectedRestart();
 
-function onFormSubmit(e) {
-  console.log(arrOfValues);
-  e.preventDefault();
-  e.currentTarget.reset();
-  localStorage.removeItem(INPUT_VALUES);
+form.addEventListener('input', throttle(handlerFormInput, 500));
+
+function handlerFormInput(e) {
+  const { name, value } = e.target;
+  arrOfValues = { ...arrOfValues, [name]: value };
+  localStorageSave();
+}
+function localStorageSave() {
+  localStorage.setItem(INPUT_KEYS, JSON.stringify(arrOfValues));
 }
 
 function onUnexpectedRestart() {
-  const LSValues = localStorage.getItem(INPUT_VALUES);
+  const localStorageValue = localStorage.getItem(INPUT_KEYS);
 
-  if (LSValues) {
-    const arrOfJson = JSON.parse(LSValues);
-
-    if (arrOfJson.email !== undefined) {
-      refs.input.value = arrOfJson.email;
+  const parsedLocalStorage = JSON.parse(localStorageValue);
+  if (localStorageValue) {
+    if (parsedLocalStorage.hasOwnProperty('email')) {
+      input.value = parsedLocalStorage.email;
     }
-    if (arrOfJson.message !== undefined) {
-      refs.textarea.value = arrOfJson.message;
+    if (parsedLocalStorage.hasOwnProperty('message')) {
+      textarea.value = parsedLocalStorage.message;
     }
   }
+  //? we took the local storage values and put
+  //? them into uor array and than this array
+  //? will be handlig that what what we puted
+  //? befor restart
+  arrOfValues = parsedLocalStorage;
 }
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  console.log(arrOfValues);
+  localStorage.removeItem(INPUT_KEYS);
+  e.currentTarget.reset();
+});
